@@ -1,0 +1,80 @@
+# Real-Time Road Accident Detection System Configuration
+
+detection:
+  model_name: "yolo11n.pt"
+  confidence_threshold: 0.40
+  iou_threshold: 0.45
+  img_size: 640
+  target_classes:
+    - "car"
+    - "bus"
+    - "truck"
+    - "motorcycle"
+    - "auto_rickshaw"
+    - "pedestrian"
+    - "cyclist"
+  device: "cpu" # 'cpu', 'cuda', or '0'
+
+tracking:
+  tracker_type: "botsort"
+  track_high_thresh: 0.5
+  track_low_thresh: 0.1
+  new_track_thresh: 0.6
+  track_buffer: 30 # Number of frames to keep lost tracks
+  match_thresh: 0.8
+  cmc_method: "orb" # Camera motion compensation
+  proximity_thresh: 0.5
+  appearance_thresh: 0.25
+
+pose:
+  model_name: "yolo11n-pose.pt"
+  confidence_threshold: 0.50
+  fall_torso_angle_threshold: 35.0 # Degrees from horizontal (< 35 deg indicates horizontal/fallen)
+  ejection_velocity_ratio_threshold: 2.2 # Speed ratio between rider and motorcycle
+  rapid_tilt_angular_vel_threshold: 60.0 # Degrees per frame
+  prolonged_ground_frames_threshold: 12 # Consecutive frames fallen to confirm sustained incapacitation
+
+kinematics:
+  fps: 30.0
+  pixels_per_meter: 15.0 # Calibration default: 15 px/meter for 1080p road view
+  ttc_critical_threshold: 1.5 # Seconds
+  ttc_warning_threshold: 2.5 # Seconds
+  sudden_deceleration_threshold: -5.0 # m/s^2 (hard braking indicator)
+  high_acceleration_threshold: 6.0 # m/s^2
+  yaw_rate_warning_threshold: 45.0 # Degrees/sec
+
+temporal:
+  sequence_length: 16 # Window of causal history frames
+  feature_dim: 12
+  hidden_dim: 64
+  num_layers: 2
+  dropout: 0.2
+  anomaly_threshold: 0.60
+
+fusion:
+  method: "weighted_sum" # 'weighted_sum', 'learned_mlp', 'rule_gated'
+  weights:
+    detection_conf: 0.10
+    pose_anomaly: 0.35
+    kinematic_risk: 0.35
+    temporal_anomaly: 0.20
+  trigger_threshold: 0.68
+  near_miss_lower_threshold: 0.45
+  debounce_consecutive_frames: 6 # Consecutive positive frames required to fire
+  event_cooldown_frames: 150 # Cooldown to avoid duplicate event alerts (~5 sec at 30 fps)
+
+privacy:
+  redact_faces: true
+  redact_license_plates: true
+  blur_kernel_size: 31
+  anonymize_mode: "gaussian_blur" # 'gaussian_blur', 'pixelate', 'blackout'
+  retention_days_accident: 30
+  retention_days_near_miss: 1
+  retention_days_normal: 0
+
+logging:
+  pre_buffer_seconds: 10
+  post_buffer_seconds: 10
+  clips_dir: "d:/Road Accident Detection/data/recordings/clips"
+  events_dir: "d:/Road Accident Detection/data/recordings/events"
+  log_level: "INFO"

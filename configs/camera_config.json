@@ -1,0 +1,20 @@
+{
+  "camera_id": "CAM_INTERSECTION_042",
+  "camera_name": "MG Road - 5th Cross Junction",
+  "latitude": 12.9715987,
+  "longitude": 77.5945627,
+  "altitude_meters": 920.0,
+  "road_type": "urban_arterial",
+  "traffic_direction": "two_way",
+  "fps": 30.0,
+  "resolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "homography_matrix": [
+    [0.024, -0.001, -12.4],
+    [0.000,  0.038, -25.8],
+    [0.000, -0.0002, 1.0]
+  ],
+  "contact_dispatch": "dispatch-alert@trafficops.local"
+}
