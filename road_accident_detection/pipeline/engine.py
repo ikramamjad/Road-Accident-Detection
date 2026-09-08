@@ -182,7 +182,17 @@ class AccidentDetectionPipeline:
 
         # Stage 3: Pose Estimation
         with self.profiler.stage("pose_estimation"):
-            poses = self.pose_detector.estimate_poses(frame)
+            needs_pose = any(
+                is_person(d.class_name) or is_vulnerable_road_user(d.class_name) or is_two_wheeler(d.class_name)
+                for d in detections
+            ) or any(
+                is_person(t.class_name) or is_vulnerable_road_user(t.class_name) or is_two_wheeler(t.class_name)
+                for t in tracks
+            )
+            if needs_pose:
+                poses = self.pose_detector.estimate_poses(frame)
+            else:
+                poses = []
 
         # Stage 4: Abnormal Posture Analysis
         posture_reports: List[PostureAnomalyReport] = []
