@@ -3,13 +3,27 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Data recordings & temp clips
-data/recordings/clips/*.mp4
-data/recordings/events/*.json
-
-# Wheels cache
-lib/wheels/
+# Local python environments and packages
+lib/
+venv/
+.venv/
+env/
 *.whl
+
+# Scratch & test outputs
+scratch/
+data/web_uploads/*
+data/web_results/*
+data/recordings/clips/*
+data/recordings/events/*
+!data/recordings/clips/.gitkeep
+!data/recordings/events/.gitkeep
+!data/web_uploads/.gitkeep
+!data/web_results/.gitkeep
+
+# Model weights
+*.pt
+!data/weights/*.pt
 
 # OS / IDE
 .DS_Store
