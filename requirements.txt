@@ -10,3 +10,4 @@ onnx>=1.14.0
 onnxruntime>=1.15.0
 matplotlib>=3.7.0
 tqdm>=4.65.0
+flask>=3.0.0

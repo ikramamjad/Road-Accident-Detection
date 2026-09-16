@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RADS // Real-Time Road Accident Detection & Crash Forensics</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              900: '#164e63',
+            },
+            darkbg: '#090d16',
+            darkcard: '#111827',
+            darkborder: '#1f2937'
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #090d16;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .grid-bg {
+      background-size: 32px 32px;
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-active {
+      background: rgba(22, 36, 60, 0.85);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.15);
+    }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col grid-bg selection:bg-cyan-500 selection:text-black">
+
+  <!-- TOP NAVIGATION -->
+  <header class="sticky top-0 z-50 glass-card border-b border-white/10 px-6 py-3.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <i data-lucide="shield-alert" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-black text-lg tracking-wider bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">RADS</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30 mono">v1.0.0</span>
+          </div>
+          <p class="text-xs text-slate-400">Real-Time Road Accident Detection & Forensics</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>PIPELINE ONLINE (YOLO11 + Causal GRU)</span>
+        </div>
+        <a href="#architecture" class="text-xs text-slate-400 hover:text-white transition">Architecture</a>
+        <a href="#upload-section" class="text-xs px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition shadow-sm shadow-cyan-500/30">
+          Analyze Video
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 space-y-12">
+
+    <!-- HERO SECTION -->
+    <section class="text-center space-y-4 pt-4 pb-2">
+      <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-cyan-400 text-xs font-medium mono">
+        <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
+        <span>Multi-Modal Telemetry & Zero Future Leakage</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight max-w-4xl mx-auto leading-tight">
+        Instant Road Accident Detection <br class="hidden sm:inline">
+        <span class="bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400 bg-clip-text text-transparent">
+          Powered by Multi-Channel AI Fusion
+        </span>
+      </h1>
+      <p class="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+        Upload any road camera footage to instantly determine whether an accident occurred. 
+        Our pipeline integrates spatial detection, trajectory kinematics, rider posture, and causal GRU modeling to eliminate false alarms.
+      </p>
+
+      <!-- FEATURE PILLARS -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-6 max-w-4xl mx-auto text-left">
+        <div class="p-3.5 rounded-xl glass-card border border-white/5 space-y-1">
+          <div class="flex items-center space-x-2 text-cyan-400">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+            <span class="text-xs font-semibold uppercase tracking-wider">Multi-Modal</span>
+          </div>
+          <p class="text-xs text-slate-300 font-medium">4-Channel Fusion</p>
+          <p class="text-[11px] text-slate-500 leading-tight">Spatial + Kinematics + Posture + Temporal</p>
+        </div>
+        <div class="p-3.5 rounded-xl glass-card border border-white/5 space-y-1">
+          <div class="flex items-center space-x-2 text-indigo-400">
+            <i data-lucide="activity" class="w-4 h-4"></i>
+            <span class="text-xs font-semibold uppercase tracking-wider">Kinematics</span>
+          </div>
+          <p class="text-xs text-slate-300 font-medium">TTC & Decel Shock</p>
+          <p class="text-[11px] text-slate-500 leading-tight">Time-to-Collision & sudden velocity drops</p>
+        </div>
+        <div class="p-3.5 rounded-xl glass-card border border-white/5 space-y-1">
+          <div class="flex items-center space-x-2 text-amber-400">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span class="text-xs font-semibold uppercase tracking-wider">Debounce</span>
+          </div>
+          <p class="text-xs text-slate-300 font-medium">False-Alarm Shield</p>
+          <p class="text-[11px] text-slate-500 leading-tight">N=6 sustained frame confirmation filter</p>
+        </div>
+        <div class="p-3.5 rounded-xl glass-card border border-white/5 space-y-1">
+          <div class="flex items-center space-x-2 text-emerald-400">
+            <i data-lucide="eye-off" class="w-4 h-4"></i>
+            <span class="text-xs font-semibold uppercase tracking-wider">Privacy</span>
+          </div>
+          <p class="text-xs text-slate-300 font-medium">Auto Redaction</p>
+          <p class="text-[11px] text-slate-500 leading-tight">Dynamic Gaussian blur on plates & faces</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- UPLOAD & ANALYSIS STATION -->
+    <section id="upload-section" class="max-w-4xl mx-auto">
+      <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-2xl border border-white/10 space-y-6">
+
+        <div class="flex items-center justify-between border-b border-white/10 pb-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+              <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-base sm:text-lg font-bold">Video Upload & Incident Inspector</h2>
+              <p class="text-xs text-slate-400">Select a real traffic file or click a preloaded test recording</p>
+            </div>
+          </div>
+          <div class="text-xs mono text-slate-400">Format: MP4, AVI, MOV, MKV</div>
+        </div>
+
+        <!-- QUICK SAMPLE BUTTONS -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2.5">
+            Quick Demos (Instant 1-Click Verification)
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="sample-buttons-container">
+            <!-- Populated via API -->
+            <button onclick="selectSample('real_highway')" id="btn-sample-highway"
+              class="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition text-left group">
+              <div class="space-y-0.5">
+                <div class="flex items-center space-x-2">
+                  <i data-lucide="video" class="w-4 h-4 text-cyan-400"></i>
+                  <span class="text-xs font-bold text-slate-200 group-hover:text-cyan-300">Real Highway Flow (1440p)</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Dense dusk traffic • Tests false-positive suppression</p>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-semibold mono">2.5K CCTV</span>
+            </button>
+
+            <button onclick="selectSample('synthetic_collision')" id="btn-sample-synth"
+              class="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition text-left group">
+              <div class="space-y-0.5">
+                <div class="flex items-center space-x-2">
+                  <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i>
+                  <span class="text-xs font-bold text-slate-200 group-hover:text-red-300">Pedestrian / Moto Collision</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Converging vehicles & fall • Tests crash alert & trigger</p>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-semibold mono">Crash Sim</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- DROPZONE -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2.5">
+            Or Upload Custom Video File
+          </label>
+          <div id="dropzone"
+            class="border-2 border-dashed border-white/15 hover:border-cyan-500/50 rounded-xl p-8 text-center cursor-pointer transition bg-black/20 hover:bg-cyan-950/10 group">
+            <input type="file" id="file-input" accept="video/*" class="hidden">
+            <div class="space-y-2">
+              <div class="w-12 h-12 rounded-full bg-white/5 group-hover:bg-cyan-500/20 text-slate-400 group-hover:text-cyan-400 mx-auto flex items-center justify-center transition">
+                <i data-lucide="film" class="w-6 h-6"></i>
+              </div>
+              <div class="text-sm font-medium text-slate-300">
+                <span class="text-cyan-400 underline decoration-cyan-500/50 group-hover:decoration-cyan-400">Click to browse</span> or drag and drop video here
+              </div>
+              <p class="text-xs text-slate-500">Max file size: 500 MB • Up to 4K resolution</p>
+            </div>
+            <!-- Uploaded file badge -->
+            <div id="file-selected-badge" class="hidden mt-4 inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-xs mono">
+              <i data-lucide="check-circle" class="w-4 h-4 text-cyan-400"></i>
+              <span id="selected-filename">video.mp4</span>
+              <span id="selected-filesize" class="text-slate-400">(0 MB)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ANALYSIS OPTIONS ACCORDION -->
+        <div class="bg-black/30 rounded-xl p-4 border border-white/5 space-y-4">
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-300">
+            <span class="flex items-center space-x-1.5">
+              <i data-lucide="sliders" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Analysis Parameters</span>
+            </span>
+            <span class="text-slate-500 font-normal">CPU Optimized</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            <div>
+              <div class="flex justify-between mb-1 text-slate-400">
+                <span>Max Frames to Analyze:</span>
+                <span id="frames-val" class="mono text-cyan-400 font-bold">120 frames</span>
+              </div>
+              <input type="range" id="slider-frames" min="30" max="300" step="30" value="120"
+                class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+              <p class="text-[10px] text-slate-500 mt-1">120 frames ≈ 4s (fast preview)</p>
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1 text-slate-400">
+                <span>Detection Confidence:</span>
+                <span id="conf-val" class="mono text-cyan-400 font-bold">0.40</span>
+              </div>
+              <input type="range" id="slider-conf" min="0.20" max="0.80" step="0.05" value="0.40"
+                class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+              <p class="text-[10px] text-slate-500 mt-1">YOLO11 box filter threshold</p>
+            </div>
+
+            <div class="flex flex-col justify-between">
+              <span class="text-slate-400 mb-1">Privacy Redaction:</span>
+              <label class="relative inline-flex items-center cursor-pointer mt-1">
+                <input type="checkbox" id="toggle-privacy" checked class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-600"></div>
+                <span class="ml-2 text-xs text-slate-300">Blur Plates & Faces</span>
+              </label>
+              <p class="text-[10px] text-slate-500 mt-1">GDPR & DPDP safety compliant</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTION BUTTON -->
+        <button id="btn-analyze" onclick="startAnalysis()"
+          class="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm tracking-wide uppercase transition shadow-lg shadow-cyan-500/25 flex items-center justify-center space-x-2">
+          <i data-lucide="play" class="w-4 h-4 fill-white"></i>
+          <span>Run Accident Detection AI</span>
+        </button>
+
+        <!-- PROGRESS BAR -->
+        <div id="progress-container" class="hidden space-y-2 pt-2">
+          <div class="flex items-center justify-between text-xs mono">
+            <span id="progress-status" class="text-cyan-400 flex items-center space-x-1.5">
+              <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
+              <span>Processing video frames through multi-modal pipeline...</span>
+            </span>
+            <span id="progress-timer" class="text-slate-400">Running...</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div id="progress-bar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full w-0 transition-all duration-300"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RESULTS & FORENSICS DASHBOARD -->
+    <section id="results-section" class="hidden max-w-5xl mx-auto space-y-6">
+
+      <!-- GRAND VERDICT BANNER -->
+      <div id="verdict-banner" class="rounded-2xl p-6 border transition-all duration-500">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <!-- VIDEO AND KEYFRAME TABS -->
+      <div class="glass-card rounded-2xl p-6 border border-white/10 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-4">
+          <div class="flex items-center space-x-2">
+            <button onclick="switchMediaTab('video')" id="tab-btn-video"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition">
+              Annotated Video Stream
+            </button>
+            <button onclick="switchMediaTab('peak')" id="tab-btn-peak"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">
+              Peak Risk Snapshot
+            </button>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <a id="btn-download-video" href="#" download
+              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 transition">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Download MP4</span>
+            </a>
+            <button onclick="downloadJSONAudit()"
+              class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 transition">
+              <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+              <span>Export Audit JSON</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- VIDEO PLAYER VIEW -->
+        <div id="view-video" class="space-y-2">
+          <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-white/10">
+            <video id="result-video" controls class="w-full h-full object-contain">
+              <source id="video-source" src="" type="video/mp4">
+              Your browser does not support HTML5 video playback.
+            </video>
+          </div>
+          <p class="text-[11px] text-slate-400 flex items-center justify-between px-1">
+            <span>Video HUD renders: Detection Bounding Boxes, BoT-SORT IDs, Kinematic Speeds, Fused Risk Meter, Blurred Plates.</span>
+            <span class="mono text-cyan-400">1280x720 25 FPS</span>
+          </p>
+        </div>
+
+        <!-- PEAK SNAPSHOT VIEW -->
+        <div id="view-peak" class="hidden space-y-2">
+          <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-white/10">
+            <img id="result-peak-img" src="" alt="Peak Risk Frame" class="w-full h-full object-contain">
+          </div>
+          <p class="text-[11px] text-slate-400 px-1">
+            Frame captured at peak fused risk index with all multi-channel tracking and privacy masks applied.
+          </p>
+        </div>
+      </div>
+
+      <!-- MULTI-CHANNEL DIAGNOSTICS & TELEMETRY -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- RISK CONTRIBUTIONS -->
+        <div class="glass-card rounded-2xl p-6 border border-white/10 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/10 pb-3">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-400"></i>
+              <h3 class="text-sm font-bold">Multi-Channel Attribution</h3>
+            </div>
+            <span class="text-xs text-slate-400 mono">Normalized %</span>
+          </div>
+
+          <div class="space-y-3.5 text-xs">
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-slate-300 font-medium">Kinematic Shock & Time-to-Collision</span>
+                <span id="attr-kinematics" class="mono text-cyan-400 font-bold">0%</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2">
+                <div id="bar-kinematics" class="bg-cyan-500 h-2 rounded-full w-0 transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-slate-300 font-medium">Temporal Trajectory Anomaly (Causal GRU)</span>
+                <span id="attr-temporal" class="mono text-indigo-400 font-bold">0%</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2">
+                <div id="bar-temporal" class="bg-indigo-500 h-2 rounded-full w-0 transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-slate-300 font-medium">Spatial Object Detection (YOLO11)</span>
+                <span id="attr-detection" class="mono text-blue-400 font-bold">0%</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2">
+                <div id="bar-detection" class="bg-blue-500 h-2 rounded-full w-0 transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-slate-300 font-medium">Abnormal Posture / Fall Anomaly (YOLO11-Pose)</span>
+                <span id="attr-pose" class="mono text-amber-400 font-bold">0%</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2">
+                <div id="bar-pose" class="bg-amber-500 h-2 rounded-full w-0 transition-all duration-500"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EXECUTION METRICS -->
+        <div class="glass-card rounded-2xl p-6 border border-white/10 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/10 pb-3">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="gauge" class="w-4 h-4 text-emerald-400"></i>
+              <h3 class="text-sm font-bold">Pipeline Performance & Telemetry</h3>
+            </div>
+            <span class="text-xs text-slate-400 mono">Runtime Stats</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
+              <span class="text-slate-400 text-[11px]">Frames Processed</span>
+              <p id="stat-frames" class="text-base font-bold mono text-white">0</p>
+            </div>
+            <div class="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
+              <span class="text-slate-400 text-[11px]">Duration Analyzed</span>
+              <p id="stat-duration" class="text-base font-bold mono text-white">0.0s</p>
+            </div>
+            <div class="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
+              <span class="text-slate-400 text-[11px]">Compute Latency</span>
+              <p id="stat-time" class="text-base font-bold mono text-white">0.0s</p>
+            </div>
+            <div class="p-3 rounded-xl bg-white/5 border border-white/5 space-y-1">
+              <span class="text-slate-400 text-[11px]">Processing Speed</span>
+              <p id="stat-fps" class="text-base font-bold mono text-emerald-400">0.0 FPS</p>
+            </div>
+          </div>
+
+          <div class="pt-1">
+            <div class="p-3 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between text-xs">
+              <span class="text-slate-400">Primary Incident Driver:</span>
+              <span id="stat-driver" class="mono text-cyan-300 font-semibold">Normal Flow</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- INCIDENT EVENTS TIMELINE -->
+      <div class="glass-card rounded-2xl p-6 border border-white/10 space-y-4">
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+            <h3 class="text-sm font-bold">Triggered Events & Keyframe Highlights</h3>
+          </div>
+          <span id="event-count-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 mono">
+            0 Events Triggered
+          </span>
+        </div>
+
+        <div id="events-table-container" class="overflow-x-auto text-xs">
+          <!-- Populated via JS -->
+          <p class="text-slate-500 py-4 text-center">No persistent collisions or hazards recorded.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ARCHITECTURE SECTION -->
+    <section id="architecture" class="max-w-5xl mx-auto space-y-6 pt-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl font-bold">How the System Eliminates False Positives</h2>
+        <p class="text-xs text-slate-400 max-w-xl mx-auto">
+          Single-model detection fails in complex road conditions. Our multi-stage architecture verifies incident causality before raising an alert.
+        </p>
+      </div>
+
+      <div class="glass-card rounded-2xl p-6 sm:p-8 border border-white/10 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+          <div class="space-y-2 p-4 rounded-xl bg-white/5 border border-white/5">
+            <div class="flex items-center space-x-2 text-cyan-400 font-bold">
+              <span class="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center mono">1</span>
+              <span>Detection & Tracking</span>
+            </div>
+            <p class="text-slate-400 leading-relaxed">
+              YOLO11 identifies vehicles and pedestrians. BoT-SORT maintains temporal track consistency across occlusions and camera motion.
+            </p>
+          </div>
+
+          <div class="space-y-2 p-4 rounded-xl bg-white/5 border border-white/5">
+            <div class="flex items-center space-x-2 text-indigo-400 font-bold">
+              <span class="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center mono">2</span>
+              <span>Kinematics & Pose</span>
+            </div>
+            <p class="text-slate-400 leading-relaxed">
+              Time-to-Collision (TTC) computes closing speeds. Gated YOLO11-Pose measures torso fall angles and prolonged ground posture.
+            </p>
+          </div>
+
+          <div class="space-y-2 p-4 rounded-xl bg-white/5 border border-white/5">
+            <div class="flex items-center space-x-2 text-amber-400 font-bold">
+              <span class="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center mono">3</span>
+              <span>Causal GRU & Debounce</span>
+            </div>
+            <p class="text-slate-400 leading-relaxed">
+              Strictly causal recurrent neural network models behavioral anomaly. A 6-frame debounce filter suppresses transient brake lights.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="glass-card border-t border-white/10 px-6 py-6 mt-12 text-center text-xs text-slate-500 space-y-1">
+    <p>RADS // Real-Time Road Accident Detection System • Architecture v1.0.0</p>
+    <p>Ultralytics YOLO11 • BoT-SORT • PyTorch Causal GRU • OpenCV VideoIO</p>
+  </footer>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // State
+    let selectedSourceType = 'sample';
+    let selectedFilename = '93869-642182008_medium.mp4';
+    let uploadedFile = null;
+    let latestAnalysisResult = null;
+
+    // Elements
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const fileBadge = document.getElementById('file-selected-badge');
+    const selectedFilenameEl = document.getElementById('selected-filename');
+    const selectedFilesizeEl = document.getElementById('selected-filesize');
+    const sliderFrames = document.getElementById('slider-frames');
+    const framesVal = document.getElementById('frames-val');
+    const sliderConf = document.getElementById('slider-conf');
+    const confVal = document.getElementById('conf-val');
+    const togglePrivacy = document.getElementById('toggle-privacy');
+    const btnAnalyze = document.getElementById('btn-analyze');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress-bar');
+    const progressStatus = document.getElementById('progress-status');
+    const resultsSection = document.getElementById('results-section');
+    const verdictBanner = document.getElementById('verdict-banner');
+
+    // Init Lucide
+    lucide.createIcons();
+
+    // Slider Listeners
+    sliderFrames.addEventListener('input', (e) => {
+      framesVal.innerText = `${e.target.value} frames`;
+    });
+    sliderConf.addEventListener('input', (e) => {
+      confVal.innerText = parseFloat(e.target.value).toFixed(2);
+    });
+
+    // Dropzone Events
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-cyan-400');
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('border-cyan-400');
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-cyan-400');
+      if (e.dataTransfer.files.length > 0) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    function selectSample(id) {
+      document.getElementById('btn-sample-highway').classList.remove('glass-card-active');
+      document.getElementById('btn-sample-synth').classList.remove('glass-card-active');
+
+      if (id === 'real_highway') {
+        selectedSourceType = 'sample';
+        selectedFilename = '93869-642182008_medium.mp4';
+        document.getElementById('btn-sample-highway').classList.add('glass-card-active');
+      } else if (id === 'synthetic_collision') {
+        selectedSourceType = 'synthetic';
+        selectedFilename = null;
+        document.getElementById('btn-sample-synth').classList.add('glass-card-active');
+      }
+      uploadedFile = null;
+      fileBadge.classList.add('hidden');
+    }
+
+    // Default select real highway
+    selectSample('real_highway');
+
+    function handleFileSelect(file) {
+      uploadedFile = file;
+      selectedSourceType = 'upload';
+      selectedFilename = null;
+
+      document.getElementById('btn-sample-highway').classList.remove('glass-card-active');
+      document.getElementById('btn-sample-synth').classList.remove('glass-card-active');
+
+      selectedFilenameEl.innerText = file.name;
+      selectedFilesizeEl.innerText = `(${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
+      fileBadge.classList.remove('hidden');
+    }
+
+    async function startAnalysis() {
+      btnAnalyze.disabled = true;
+      btnAnalyze.classList.add('opacity-50', 'cursor-not-allowed');
+      progressContainer.classList.remove('hidden');
+      resultsSection.classList.add('hidden');
+      progressBar.style.width = '15%';
+
+      let filenameToAnalyze = selectedFilename;
+
+      // 1. If custom file uploaded, send via /api/upload
+      if (selectedSourceType === 'upload' && uploadedFile) {
+        progressStatus.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i><span>Uploading video payload to inspection server...</span>`;
+        lucide.createIcons();
+
+        const formData = new FormData();
+        formData.append('video', uploadedFile);
+
+        try {
+          const upRes = await fetch('/api/upload', { method: 'POST', body: formData });
+          const upData = await upRes.json();
+          if (!upRes.ok) throw new Error(upData.error || 'Upload failed');
+          filenameToAnalyze = upData.filename;
+          progressBar.style.width = '40%';
+        } catch (err) {
+          alert('Upload failed: ' + err.message);
+          resetAnalysisBtn();
+          return;
+        }
+      }
+
+      // 2. Trigger pipeline analysis
+      progressStatus.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i><span>Processing frames through YOLO11, BoT-SORT, TTC Kinematics & Causal GRU...</span>`;
+      lucide.createIcons();
+      progressBar.style.width = '65%';
+
+      const payload = {
+        source_type: selectedSourceType,
+        filename: filenameToAnalyze,
+        max_frames: parseInt(sliderFrames.value),
+        conf_threshold: parseFloat(sliderConf.value),
+        redact_privacy: togglePrivacy.checked
+      };
+
+      try {
+        const anaRes = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const anaData = await anaRes.json();
+        if (!anaRes.ok) throw new Error(anaData.error || 'Analysis failed');
+
+        progressBar.style.width = '100%';
+        latestAnalysisResult = anaData;
+        renderResults(anaData);
+
+      } catch (err) {
+        alert('Analysis error: ' + err.message);
+      } finally {
+        resetAnalysisBtn();
+      }
+    }
+
+    function resetAnalysisBtn() {
+      btnAnalyze.disabled = false;
+      btnAnalyze.classList.remove('opacity-50', 'cursor-not-allowed');
+      progressContainer.classList.add('hidden');
+    }
+
+    function renderResults(data) {
+      resultsSection.classList.remove('hidden');
+
+      // Scroll smoothly to results
+      resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+      // 1. Grand Verdict Banner
+      let bannerHtml = '';
+      if (data.verdict === 'ACCIDENT_DETECTED') {
+        bannerHtml = `
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-red-950/40 border border-red-500/50 rounded-2xl shadow-xl shadow-red-900/20">
+            <div class="flex items-center space-x-4">
+              <div class="w-14 h-14 rounded-2xl bg-red-600/30 border border-red-500 text-red-400 flex items-center justify-center flex-shrink-0 animate-pulse">
+                <i data-lucide="alert-octagon" class="w-8 h-8"></i>
+              </div>
+              <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                  <span class="text-xl sm:text-2xl font-black text-red-400 uppercase tracking-wide">ACCIDENT DETECTED</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-red-500/30 text-red-200 font-bold mono border border-red-500/40">${data.severity}</span>
+                </div>
+                <p class="text-xs text-slate-300 max-w-xl">${data.explanation}</p>
+              </div>
+            </div>
+            <div class="text-left sm:text-right mono text-xs space-y-0.5 bg-black/40 px-4 py-2.5 rounded-xl border border-white/5">
+              <div class="text-slate-400">Peak Risk Index</div>
+              <div class="text-xl font-bold text-red-400">${data.max_risk_score} / 1.0</div>
+            </div>
+          </div>
+        `;
+      } else if (data.verdict === 'NEAR_MISS') {
+        bannerHtml = `
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-amber-950/40 border border-amber-500/50 rounded-2xl shadow-xl shadow-amber-900/20">
+            <div class="flex items-center space-x-4">
+              <div class="w-14 h-14 rounded-2xl bg-amber-600/30 border border-amber-500 text-amber-400 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+              </div>
+              <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                  <span class="text-xl sm:text-2xl font-black text-amber-400 uppercase tracking-wide">NEAR-MISS HAZARD DETECTED</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200 font-bold mono border border-amber-500/40">CRITICAL TTC</span>
+                </div>
+                <p class="text-xs text-slate-300 max-w-xl">${data.explanation}</p>
+              </div>
+            </div>
+            <div class="text-left sm:text-right mono text-xs space-y-0.5 bg-black/40 px-4 py-2.5 rounded-xl border border-white/5">
+              <div class="text-slate-400">Peak Risk Index</div>
+              <div class="text-xl font-bold text-amber-400">${data.max_risk_score} / 1.0</div>
+            </div>
+          </div>
+        `;
+      } else {
+        bannerHtml = `
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-emerald-950/30 border border-emerald-500/40 rounded-2xl shadow-xl shadow-emerald-900/10">
+            <div class="flex items-center space-x-4">
+              <div class="w-14 h-14 rounded-2xl bg-emerald-600/20 border border-emerald-500 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="shield-check" class="w-8 h-8"></i>
+              </div>
+              <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                  <span class="text-xl sm:text-2xl font-black text-emerald-400 uppercase tracking-wide">SAFE ROAD FLOW — NO ACCIDENT</span>
+                  <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold mono border border-emerald-500/30">MONITORING</span>
+                </div>
+                <p class="text-xs text-slate-300 max-w-xl">${data.explanation}</p>
+              </div>
+            </div>
+            <div class="text-left sm:text-right mono text-xs space-y-0.5 bg-black/40 px-4 py-2.5 rounded-xl border border-white/5">
+              <div class="text-slate-400">Max Sustained Risk</div>
+              <div class="text-xl font-bold text-emerald-400">${data.max_risk_score} / 1.0</div>
+            </div>
+          </div>
+        `;
+      }
+      verdictBanner.innerHTML = bannerHtml;
+
+      // 2. Video Player & Peak Snapshot
+      const videoEl = document.getElementById('result-video');
+      const videoSrc = document.getElementById('video-source');
+      videoSrc.src = data.video_url;
+      videoEl.load();
+
+      document.getElementById('result-peak-img').src = data.keyframe_url;
+      document.getElementById('btn-download-video').href = data.video_url;
+
+      // 3. Attribution Bars
+      const contrib = data.channel_contributions;
+      document.getElementById('attr-kinematics').innerText = `${contrib.kinematic_risk}%`;
+      document.getElementById('bar-kinematics').style.width = `${contrib.kinematic_risk}%`;
+
+      document.getElementById('attr-temporal').innerText = `${contrib.temporal_anomaly}%`;
+      document.getElementById('bar-temporal').style.width = `${contrib.temporal_anomaly}%`;
+
+      document.getElementById('attr-detection').innerText = `${contrib.detection_conf}%`;
+      document.getElementById('bar-detection').style.width = `${contrib.detection_conf}%`;
+
+      document.getElementById('attr-pose').innerText = `${contrib.pose_anomaly}%`;
+      document.getElementById('bar-pose').style.width = `${contrib.pose_anomaly}%`;
+
+      // 4. Performance Stats
+      document.getElementById('stat-frames').innerText = data.frames_processed;
+      document.getElementById('stat-duration').innerText = `${data.duration_analyzed_sec}s`;
+      document.getElementById('stat-time').innerText = `${data.processing_time_sec}s`;
+      document.getElementById('stat-fps').innerText = `${data.processing_fps} FPS`;
+      document.getElementById('stat-driver').innerText = data.primary_driver;
+
+      // 5. Events Table
+      const allEvents = [...(data.accident_events || []), ...(data.near_miss_events || [])];
+      document.getElementById('event-count-badge').innerText = `${allEvents.length} Incident Trigger(s)`;
+
+      const tableContainer = document.getElementById('events-table-container');
+      if (allEvents.length > 0) {
+        let tableHtml = `
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400 mono">
+                <th class="py-2 px-3">Frame</th>
+                <th class="py-2 px-3">Timestamp</th>
+                <th class="py-2 px-3">Event Type</th>
+                <th class="py-2 px-3">Severity</th>
+                <th class="py-2 px-3">Fused Risk</th>
+                <th class="py-2 px-3">Primary Trigger</th>
+                <th class="py-2 px-3">Details</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+        `;
+        allEvents.forEach(ev => {
+          const isAccident = ev.type === 'ACCIDENT';
+          const badgeClass = isAccident ? 'bg-red-500/20 text-red-300 border-red-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+          tableHtml += `
+            <tr class="hover:bg-white/5 transition">
+              <td class="py-2.5 px-3 mono text-slate-300">${ev.frame_idx}</td>
+              <td class="py-2.5 px-3 mono text-slate-400">${ev.timestamp_sec}s</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded border text-[11px] font-bold ${badgeClass}">${ev.type}</span></td>
+              <td class="py-2.5 px-3 font-semibold uppercase text-slate-300">${ev.severity}</td>
+              <td class="py-2.5 px-3 mono font-bold text-cyan-400">${ev.fused_risk}</td>
+              <td class="py-2.5 px-3 text-slate-300">${ev.primary_driver.replace('_', ' ')}</td>
+              <td class="py-2.5 px-3 text-slate-400">${ev.justification}</td>
+            </tr>
+          `;
+        });
+        tableHtml += `</tbody></table>`;
+        tableContainer.innerHTML = tableHtml;
+      } else {
+        tableContainer.innerHTML = `
+          <div class="text-center py-6 space-y-1">
+            <p class="text-slate-300 font-medium">All telemetry remained within normal, non-hazardous boundaries.</p>
+            <p class="text-slate-500">Zero false accident events triggered during continuous evaluation.</p>
+          </div>
+        `;
+      }
+
+      lucide.createIcons();
+    }
+
+    function switchMediaTab(tab) {
+      const viewVideo = document.getElementById('view-video');
+      const viewPeak = document.getElementById('view-peak');
+      const tabBtnVideo = document.getElementById('tab-btn-video');
+      const tabBtnPeak = document.getElementById('tab-btn-peak');
+
+      if (tab === 'video') {
+        viewVideo.classList.remove('hidden');
+        viewPeak.classList.add('hidden');
+        tabBtnVideo.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition';
+        tabBtnPeak.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+      } else {
+        viewVideo.classList.add('hidden');
+        viewPeak.classList.remove('hidden');
+        tabBtnPeak.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition';
+        tabBtnVideo.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+      }
+    }
+
+    function downloadJSONAudit() {
+      if (!latestAnalysisResult) return;
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(latestAnalysisResult, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `rads_audit_${latestAnalysisResult.analysis_id}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+  </script>
+</body>
+</html>
