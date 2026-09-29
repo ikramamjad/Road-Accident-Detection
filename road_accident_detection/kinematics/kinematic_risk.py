@@ -36,6 +36,8 @@ class KinematicRiskEngine:
         ttc_warning_thresh: float = 2.5,
         hard_braking_thresh: float = -4.5,
     ):
+        self.pixels_per_meter = pixels_per_meter
+        self.fps = fps
         self.motion_analyzer = MotionAnalyzer(
             pixels_per_meter=pixels_per_meter,
             fps=fps,

@@ -33,6 +33,7 @@ class TrackedObject:
     hits: int = 1
     age: int = 1
     time_since_update: int = 0
+    is_overlapped: bool = False
     # Kalman-like smooth velocity state
     vx: float = 0.0
     vy: float = 0.0
@@ -86,11 +87,13 @@ class BoTSORTTracker:
         track_buffer_frames: int = 30,
         match_thresh: float = 0.8,
         fps: float = 30.0,
+        overlap_retention_frames: int = 5,
     ):
         self.track_high_thresh = track_high_thresh
         self.track_low_thresh = track_low_thresh
         self.new_track_thresh = new_track_thresh
         self.max_lost_frames = track_buffer_frames
+        self.overlap_retention_frames = overlap_retention_frames
         self.match_thresh = match_thresh
         self.fps = fps
 
@@ -148,12 +151,24 @@ class BoTSORTTracker:
         for track, det in matched_tracks_2:
             self._update_track_state(track, det, curr_frame, curr_time)
 
-        # Remaining unmatched active tracks transition to LOST
+        # Remaining unmatched active tracks: apply temporal overlapping / coasting
         for idx in unmatched_tracks_2:
             track = unmatched_active_tracks[idx]
-            track.state = TrackState.LOST
-            self.lost_objects[track.track_id] = track
-            self.tracked_objects.pop(track.track_id, None)
+            if track.time_since_update <= self.overlap_retention_frames:
+                # Retain active track by overlapping projected position forward
+                track.is_overlapped = True
+                self.trajectory_manager.update_track(
+                    track_id=track.track_id,
+                    class_name=track.class_name,
+                    frame_idx=curr_frame,
+                    timestamp=curr_time,
+                    bbox=track.bbox,
+                )
+            else:
+                track.state = TrackState.LOST
+                track.is_overlapped = False
+                self.lost_objects[track.track_id] = track
+                self.tracked_objects.pop(track.track_id, None)
 
         # 4. Third association: Match lost tracks with remaining unmatched high-conf detections
         unmatched_high_dets = [high_dets[i] for i in unmatched_dets_1]
@@ -258,6 +273,7 @@ class BoTSORTTracker:
         track.class_name = det.class_name
         track.hits += 1
         track.time_since_update = 0
+        track.is_overlapped = False
 
         # Update smooth linear velocity
         new_center = track.center

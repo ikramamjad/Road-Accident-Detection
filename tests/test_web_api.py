@@ -76,7 +76,36 @@ class TestWebAPI(unittest.TestCase):
         self.assertIn("max_risk_score", data)
         self.assertIn("video_url", data)
         self.assertIn("keyframe_url", data)
+        self.assertIn("keyframe_snapshots", data)
+        self.assertIn("fault_attribution", data)
+        self.assertIsInstance(data["fault_attribution"], dict)
         self.assertEqual(data["frames_processed"], 30)
+
+    def test_health_check_endpoints(self):
+        """Verify /healthz and /api/health return 200 with status healthy."""
+        for path in ["/healthz", "/api/health"]:
+            res = self.client.get(path)
+            self.assertEqual(res.status_code, 200)
+            data = json.loads(res.data)
+            self.assertEqual(data["status"], "healthy")
+
+    def test_favicon_endpoint(self):
+        """Verify /favicon.ico returns 204 No Content without error."""
+        res = self.client.get("/favicon.ico")
+        self.assertEqual(res.status_code, 204)
+
+    def test_graceful_404_handler(self):
+        """Verify unknown page route serves index.html, while /api/* returns JSON 404."""
+        # Page route
+        res_page = self.client.get("/non-existent-page")
+        self.assertEqual(res_page.status_code, 200)
+        self.assertIn(b"RADS", res_page.data)
+
+        # API route
+        res_api = self.client.get("/api/non-existent-endpoint")
+        self.assertEqual(res_api.status_code, 404)
+        data = json.loads(res_api.data)
+        self.assertIn("error", data)
 
 
 if __name__ == "__main__":

@@ -235,12 +235,18 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div>
               <div class="flex justify-between mb-1 text-slate-400">
-                <span>Max Frames to Analyze:</span>
+                <span>Analysis Duration:</span>
                 <span id="frames-val" class="mono text-cyan-400 font-bold">120 frames</span>
               </div>
-              <input type="range" id="slider-frames" min="30" max="300" step="30" value="120"
+              <input type="range" id="slider-frames" min="30" max="600" step="30" value="120"
                 class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
-              <p class="text-[10px] text-slate-500 mt-1">120 frames ≈ 4s (fast preview)</p>
+              <div class="flex items-center justify-between mt-1.5">
+                <label class="inline-flex items-center space-x-1.5 cursor-pointer text-[11px] text-cyan-300 select-none">
+                  <input type="checkbox" id="toggle-full-video" class="rounded bg-slate-700 border-slate-600 text-cyan-500 focus:ring-0">
+                  <span class="font-medium">Process Full Video (Unlimited)</span>
+                </label>
+                <span id="frames-hint" class="text-[10px] text-slate-500">~4s preview</span>
+              </div>
             </div>
 
             <div>
@@ -347,6 +353,105 @@
           <p class="text-[11px] text-slate-400 px-1">
             Frame captured at peak fused risk index with all multi-channel tracking and privacy masks applied.
           </p>
+        </div>
+        <!-- FILMSTRIP KEYFRAME REVIEW CAROUSEL -->
+        <div id="filmstrip-container" class="mt-4 pt-4 border-t border-white/10 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-300 flex items-center space-x-1.5">
+              <i data-lucide="film" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Visual Review Strip (Chronological Keyframes)</span>
+            </span>
+            <span class="text-[11px] text-slate-500 mono">Click any frame to inspect or jump video</span>
+          </div>
+          <div id="keyframe-thumbnails" class="flex space-x-3 overflow-x-auto pb-2 scrollbar-thin">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ACCIDENT FAULT & LIABILITY FORENSICS CARD -->
+      <div id="fault-forensics-card" class="glass-card rounded-2xl p-6 border border-white/10 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+          <div class="flex items-center space-x-3">
+            <div id="fault-badge-icon" class="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="scale" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 class="text-base font-bold text-white">Accident Fault & Liability Forensics</h3>
+                <span id="fault-status-tag" class="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-semibold mono">EVALUATING</span>
+              </div>
+              <p class="text-xs text-slate-400">Kinematic Right-of-Way, Deceleration Shock & Causal Responsibility Determination</p>
+            </div>
+          </div>
+          <div id="fault-summary-pill" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-300 mono text-left sm:text-right">
+            <!-- Primary Liability Summary -->
+          </div>
+        </div>
+
+        <!-- LIABILITY ALLOCATION BAR -->
+        <div id="liability-bar-container" class="space-y-1.5">
+          <div class="flex justify-between text-xs font-bold">
+            <span id="primary-party-label" class="text-red-400">Primary At-Fault: 0%</span>
+            <span id="secondary-party-label" class="text-cyan-400">Secondary / Impacted: 0%</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-3 flex overflow-hidden p-0.5 border border-white/10">
+            <div id="liability-bar-primary" class="bg-gradient-to-r from-red-600 to-amber-500 h-2 rounded-l-full transition-all duration-700" style="width: 0%"></div>
+            <div id="liability-bar-secondary" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-r-full transition-all duration-700" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- PARTICIPANT CARDS -->
+        <div id="participant-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Populated via JS -->
+        </div>
+
+        <!-- RECONSTRUCTION NARRATIVE -->
+        <div class="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2">
+          <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <i data-lucide="book-open" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Forensic Causal Reconstruction Narrative</span>
+          </div>
+          <p id="reconstruction-narrative-text" class="text-xs text-slate-200 leading-relaxed font-sans">
+            <!-- Narrative populated via JS -->
+          </p>
+        </div>
+
+        <!-- MULTI-PHASE TIMELINE (APPROACH, IMPACT, POST-CRASH) -->
+        <div id="timeline-phases-container" class="space-y-2.5">
+          <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <i data-lucide="git-commit" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Collision Progression Timeline</span>
+          </div>
+          <div id="timeline-phases-list" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- PARTICIPANT TELEMETRY TABLE -->
+        <div id="fault-table-wrapper" class="overflow-x-auto text-xs pt-1">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400 mono">
+                <th class="py-2 px-3">Participant</th>
+                <th class="py-2 px-3">Role</th>
+                <th class="py-2 px-3">Liability</th>
+                <th class="py-2 px-3">Pre-Impact Speed</th>
+                <th class="py-2 px-3">Peak Decel Shock</th>
+                <th class="py-2 px-3">Trajectory Heading</th>
+                <th class="py-2 px-3">Infraction / Violations</th>
+              </tr>
+            </thead>
+            <tbody id="fault-table-body" class="divide-y divide-white/5">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- LEGAL & INSURANCE FOOTNOTE -->
+        <div class="text-[11px] text-slate-400 bg-white/5 p-3 rounded-xl border border-white/5 flex items-start space-x-2">
+          <i data-lucide="info" class="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5"></i>
+          <span id="fault-legal-summary">Liability attribution derived from BoT-SORT track kinematics, bounding box overlap trajectory, and right-of-way telemetry rules.</span>
         </div>
       </div>
 
@@ -546,9 +651,27 @@
     // Init Lucide
     lucide.createIcons();
 
-    // Slider Listeners
+    // Slider & Toggle Listeners
+    const toggleFullVideo = document.getElementById('toggle-full-video');
+    const framesHint = document.getElementById('frames-hint');
+
+    toggleFullVideo.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        sliderFrames.disabled = true;
+        sliderFrames.classList.add('opacity-40', 'cursor-not-allowed');
+        framesVal.innerText = 'Entire Video (Full)';
+        framesHint.innerText = 'All frames (unlimited)';
+      } else {
+        sliderFrames.disabled = false;
+        sliderFrames.classList.remove('opacity-40', 'cursor-not-allowed');
+        framesVal.innerText = `${sliderFrames.value} frames`;
+        framesHint.innerText = `~${(sliderFrames.value / 30).toFixed(0)}s preview`;
+      }
+    });
+
     sliderFrames.addEventListener('input', (e) => {
       framesVal.innerText = `${e.target.value} frames`;
+      framesHint.innerText = `~${(e.target.value / 30).toFixed(0)}s preview`;
     });
     sliderConf.addEventListener('input', (e) => {
       confVal.innerText = parseFloat(e.target.value).toFixed(2);
@@ -647,7 +770,7 @@
       const payload = {
         source_type: selectedSourceType,
         filename: filenameToAnalyze,
-        max_frames: parseInt(sliderFrames.value),
+        max_frames: toggleFullVideo.checked ? 0 : parseInt(sliderFrames.value),
         conf_threshold: parseFloat(sliderConf.value),
         redact_privacy: togglePrivacy.checked
       };
@@ -761,7 +884,177 @@
       document.getElementById('result-peak-img').src = data.keyframe_url;
       document.getElementById('btn-download-video').href = data.video_url;
 
-      // 3. Attribution Bars
+      // 3. Filmstrip Thumbnails
+      const filmstripThumbnails = document.getElementById('keyframe-thumbnails');
+      filmstripThumbnails.innerHTML = '';
+      if (data.keyframe_snapshots && data.keyframe_snapshots.length > 0) {
+        data.keyframe_snapshots.forEach((snap) => {
+          const thumbDiv = document.createElement('div');
+          thumbDiv.className = 'flex-shrink-0 cursor-pointer group bg-black/40 rounded-lg p-1.5 border border-white/10 hover:border-cyan-400 transition w-36';
+          thumbDiv.innerHTML = `
+            <div class="aspect-video bg-black rounded overflow-hidden relative">
+              <img src="${snap.url}" alt="${snap.label}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+              <span class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-bold text-cyan-300 mono">${snap.timestamp_sec}s</span>
+            </div>
+            <p class="text-[10px] text-slate-300 font-medium truncate mt-1">${snap.label}</p>
+          `;
+          thumbDiv.onclick = () => {
+            document.getElementById('result-peak-img').src = snap.url;
+            switchMediaTab('peak');
+            if (videoEl) {
+              videoEl.currentTime = snap.timestamp_sec;
+            }
+          };
+          filmstripThumbnails.appendChild(thumbDiv);
+        });
+      }
+
+      // 4. Fault & Liability Forensics Rendering
+      const fa = data.fault_attribution;
+      const faultTag = document.getElementById('fault-status-tag');
+      const faultSummaryPill = document.getElementById('fault-summary-pill');
+      const primaryLabel = document.getElementById('primary-party-label');
+      const secondaryLabel = document.getElementById('secondary-party-label');
+      const barPrimary = document.getElementById('liability-bar-primary');
+      const barSecondary = document.getElementById('liability-bar-secondary');
+      const participantGrid = document.getElementById('participant-cards-grid');
+      const narrativeText = document.getElementById('reconstruction-narrative-text');
+      const timelinePhasesList = document.getElementById('timeline-phases-list');
+      const faultTableBody = document.getElementById('fault-table-body');
+      const legalSummaryEl = document.getElementById('fault-legal-summary');
+
+      if (fa && fa.has_fault_determination) {
+        faultTag.className = "text-[10px] px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 font-semibold mono border border-red-500/30";
+        faultTag.innerText = "LIABILITY DETERMINED";
+
+        faultSummaryPill.innerHTML = `
+          <span class="text-slate-400">At-Fault:</span>
+          <span class="text-red-400 font-bold ml-1">${(fa.primary_at_fault_class || 'VEHICLE').toUpperCase()} #${fa.primary_at_fault_id}</span>
+          <span class="text-red-300 ml-1">(${fa.primary_liability_percentage}% Liability)</span>
+        `;
+
+        primaryLabel.innerText = `Primary: ${(fa.primary_at_fault_class || 'Vehicle').toUpperCase()} #${fa.primary_at_fault_id} (${fa.primary_liability_percentage}%)`;
+        secondaryLabel.innerText = fa.secondary_involved_id != null ?
+          `Secondary: ${(fa.secondary_involved_class || 'Entity').toUpperCase()} #${fa.secondary_involved_id} (${fa.secondary_liability_percentage}%)` :
+          `Secondary: None / Single-Vehicle (0%)`;
+
+        barPrimary.style.width = `${fa.primary_liability_percentage}%`;
+        barSecondary.style.width = `${fa.secondary_liability_percentage}%`;
+
+        let cardsHtml = '';
+        if (fa.participants && fa.participants.length > 0) {
+          fa.participants.forEach(p => {
+            const isPrimary = p.liability_percentage > 50;
+            const borderCls = isPrimary ? 'border-red-500/40 bg-red-950/20' : 'border-cyan-500/40 bg-cyan-950/20';
+            const badgeCls = isPrimary ? 'bg-red-500/20 text-red-300 border-red-500/30' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30';
+            const icon = isPrimary ? 'alert-triangle' : 'shield';
+
+            cardsHtml += `
+              <div class="p-4 rounded-xl border ${borderCls} space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <i data-lucide="${icon}" class="w-4 h-4 ${isPrimary ? 'text-red-400' : 'text-cyan-400'}"></i>
+                    <span class="font-bold text-white uppercase text-xs">${p.class_name} (ID #${p.track_id})</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded text-[11px] font-bold border mono ${badgeCls}">${p.role}</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-[11px]">
+                  <div class="p-2 rounded bg-black/40">
+                    <span class="text-slate-400 block text-[10px]">Liability</span>
+                    <span class="font-bold ${isPrimary ? 'text-red-400' : 'text-cyan-300'} mono">${p.liability_percentage}%</span>
+                  </div>
+                  <div class="p-2 rounded bg-black/40">
+                    <span class="text-slate-400 block text-[10px]">Speed (Pre)</span>
+                    <span class="font-bold text-slate-200 mono">${p.pre_impact_speed_kmh} km/h</span>
+                  </div>
+                  <div class="p-2 rounded bg-black/40">
+                    <span class="text-slate-400 block text-[10px]">Peak Decel</span>
+                    <span class="font-bold text-slate-200 mono">${p.peak_deceleration_m_s2} m/s²</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span class="text-[10px] text-slate-400 block mb-1">Causal Infraction / Violations:</span>
+                  <div class="flex flex-wrap gap-1">
+                    ${p.violations.map(v => `<span class="px-2 py-0.5 rounded text-[10px] bg-white/5 border border-white/10 text-slate-300">${v}</span>`).join('')}
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        }
+        participantGrid.innerHTML = cardsHtml;
+
+        narrativeText.innerText = fa.reconstruction_narrative;
+
+        let phasesHtml = '';
+        if (fa.timeline_phases && fa.timeline_phases.length > 0) {
+          fa.timeline_phases.forEach((tp, i) => {
+            phasesHtml += `
+              <div class="p-3 rounded-xl bg-black/30 border border-white/5 space-y-1">
+                <div class="flex items-center space-x-1.5 text-xs font-bold text-slate-200">
+                  <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px] flex items-center justify-center mono">${i+1}</span>
+                  <span>${tp.phase}</span>
+                </div>
+                <p class="text-[11px] text-slate-400 leading-snug">${tp.details}</p>
+              </div>
+            `;
+          });
+        }
+        timelinePhasesList.innerHTML = phasesHtml;
+
+        let tableHtml = '';
+        if (fa.participants && fa.participants.length > 0) {
+          fa.participants.forEach(p => {
+            const isPri = p.liability_percentage > 50;
+            tableHtml += `
+              <tr class="hover:bg-white/5 transition">
+                <td class="py-2.5 px-3 font-semibold text-white uppercase">${p.class_name} #${p.track_id}</td>
+                <td class="py-2.5 px-3 text-slate-300">${p.role}</td>
+                <td class="py-2.5 px-3 font-bold mono ${isPri ? 'text-red-400' : 'text-cyan-400'}">${p.liability_percentage}%</td>
+                <td class="py-2.5 px-3 mono text-slate-300">${p.pre_impact_speed_kmh} km/h</td>
+                <td class="py-2.5 px-3 mono text-slate-300">${p.peak_deceleration_m_s2} m/s²</td>
+                <td class="py-2.5 px-3 mono text-slate-400">${p.trajectory_heading_deg}°</td>
+                <td class="py-2.5 px-3 text-slate-300">${p.violations.join(', ')}</td>
+              </tr>
+            `;
+          });
+        }
+        faultTableBody.innerHTML = tableHtml;
+        legalSummaryEl.innerText = fa.legal_summary;
+
+      } else {
+        faultTag.className = "text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold mono border border-emerald-500/30";
+        faultTag.innerText = "NO ACCIDENT";
+        faultSummaryPill.innerHTML = `<span class="text-emerald-400 font-bold">Safe Road Flow</span>`;
+        primaryLabel.innerText = "Normal Traffic Flow: No At-Fault Party";
+        secondaryLabel.innerText = "0% Collision Liability Allocated";
+        barPrimary.style.width = '0%';
+        barSecondary.style.width = '100%';
+        barSecondary.className = 'bg-emerald-500/40 h-2 rounded-full transition-all duration-700';
+
+        participantGrid.innerHTML = `
+          <div class="col-span-full p-4 rounded-xl border border-emerald-500/20 bg-emerald-950/10 text-center space-y-1">
+            <p class="text-xs font-semibold text-emerald-300">Continuous Trajectory Equilibrium</p>
+            <p class="text-[11px] text-slate-400">All detected road vehicles and VRUs maintained continuous trajectory separation, adequate braking clearance, and lane discipline.</p>
+          </div>
+        `;
+        narrativeText.innerText = (fa && fa.reconstruction_narrative) ? fa.reconstruction_narrative : "All road actors operated within standard kinematic and right-of-way safety limits. No collision, fall, or sudden impact observed.";
+        timelinePhasesList.innerHTML = `
+          <div class="col-span-full p-3 text-center text-xs text-slate-500">
+            Zero emergency transition phases recorded during continuous observation.
+          </div>
+        `;
+        faultTableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-3 px-3 text-center text-slate-500">No fault or right-of-way infractions detected.</td>
+          </tr>
+        `;
+        legalSummaryEl.innerText = (fa && fa.legal_summary) ? fa.legal_summary : "Safe operational conditions recorded. No insurance or legal liability assignment necessary.";
+      }
+
+      // 5. Attribution Bars
       const contrib = data.channel_contributions;
       document.getElementById('attr-kinematics').innerText = `${contrib.kinematic_risk}%`;
       document.getElementById('bar-kinematics').style.width = `${contrib.kinematic_risk}%`;
@@ -775,14 +1068,14 @@
       document.getElementById('attr-pose').innerText = `${contrib.pose_anomaly}%`;
       document.getElementById('bar-pose').style.width = `${contrib.pose_anomaly}%`;
 
-      // 4. Performance Stats
+      // 6. Performance Stats
       document.getElementById('stat-frames').innerText = data.frames_processed;
       document.getElementById('stat-duration').innerText = `${data.duration_analyzed_sec}s`;
       document.getElementById('stat-time').innerText = `${data.processing_time_sec}s`;
       document.getElementById('stat-fps').innerText = `${data.processing_fps} FPS`;
       document.getElementById('stat-driver').innerText = data.primary_driver;
 
-      // 5. Events Table
+      // 7. Events Table
       const allEvents = [...(data.accident_events || []), ...(data.near_miss_events || [])];
       document.getElementById('event-count-badge').innerText = `${allEvents.length} Incident Trigger(s)`;
 

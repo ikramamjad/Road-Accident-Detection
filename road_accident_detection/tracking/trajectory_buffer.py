@@ -141,6 +141,11 @@ class TrajectoryHistory:
                 pt.speed / 500.0,
             ]
 
+        # Temporal overlapping: back-fill earlier slots with the earliest observation
+        if offset > 0 and len(pts) > 0:
+            for j in range(offset):
+                features[j] = features[offset]
+
         return features
 
 

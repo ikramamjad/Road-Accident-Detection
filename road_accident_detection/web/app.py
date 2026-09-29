@@ -1,7 +1,7 @@
 """
 Real-Time Road Accident Detection System — Web Backend Server.
 Flask application providing video upload, sample selection, pipeline execution,
-and rich multi-modal forensic diagnostics.
+accident fault & liability attribution, and rich multi-modal forensic diagnostics.
 """
 
 from datetime import datetime
@@ -31,6 +31,7 @@ from road_accident_detection.pipeline.engine import AccidentDetectionPipeline, P
 from road_accident_detection.detection.classes import RoadClass
 from road_accident_detection.detection.yolo_detector import DetectionResult
 from road_accident_detection.pose.pose_detector import PersonPose
+from road_accident_detection.fusion.fault_attribution import FaultAttributionEngine, FaultAttributionReport
 
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -68,6 +69,37 @@ def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def transcode_to_web_h264(input_path: Path, output_path: Path) -> bool:
+    """Transcode video into standard browser-compatible H.264 MP4 with yuv420p and faststart."""
+    try:
+        import imageio_ffmpeg
+        import subprocess
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        temp_out = output_path.parent / f"transcoded_{uuid.uuid4().hex[:6]}_{output_path.name}"
+        cmd = [
+            ffmpeg_exe, "-y",
+            "-i", str(input_path),
+            "-vcodec", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-preset", "veryfast",
+            "-crf", "23",
+            "-movflags", "+faststart",
+            str(temp_out)
+        ]
+        res = subprocess.run(cmd, capture_output=True, timeout=300)
+        if res.returncode == 0 and temp_out.exists() and temp_out.stat().st_size > 0:
+            if input_path == output_path:
+                input_path.unlink(missing_ok=True)
+            shutil.move(str(temp_out), str(output_path))
+            return True
+        else:
+            if temp_out.exists():
+                temp_out.unlink(missing_ok=True)
+    except Exception as e:
+        print(f"[Transcode Warning] ffmpeg transcoding failed: {e}")
+    return False
+
+
 def generate_synthetic_stream(num_frames: int = 120, width: int = 1280, height: int = 720):
     """Generates synthetic video frames simulating an approaching vehicle and crossing pedestrian collision."""
     for f in range(num_frames):
@@ -99,8 +131,8 @@ def generate_synthetic_stream(num_frames: int = 120, width: int = 1280, height: 
             cv2.rectangle(frame, (ped_x - 45, ped_y - 12), (ped_x + 45, ped_y + 12), (50, 50, 220), -1)
 
         yield frame
- 
- 
+
+
 class SyntheticDetectorAdapter:
     """Provides ground-truth detection boxes matching generate_synthetic_stream for simulation."""
     def __init__(self, width: int = 1280, height: int = 720):
@@ -168,6 +200,27 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/healthz")
+@app.route("/api/health")
+def health_check():
+    """Standard health check endpoint for cloud deployments & monitors."""
+    return jsonify({"status": "healthy", "service": "RADS Road Accident Detection", "timestamp": datetime.now().isoformat()})
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Favicon endpoint preventing unnecessary 404 noise."""
+    return "", 204
+
+
+@app.errorhandler(404)
+def handle_404(e):
+    """Graceful 404 handler preventing deployment crash."""
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Resource or endpoint not found", "path": request.path}), 404
+    return render_template("index.html"), 200
+
+
 @app.route("/api/status", methods=["GET"])
 def api_status():
     """Health check and model telemetry endpoint."""
@@ -177,9 +230,10 @@ def api_status():
         "models": {
             "object_detector": "YOLO11 Nano",
             "pose_estimator": "YOLO11-Pose Nano (VRU Gated)",
-            "tracker": "BoT-SORT (Re-ID + IoU)",
+            "tracker": "BoT-SORT (Re-ID + Temporal Overlap)",
             "temporal_model": "Causal 2-Layer GRU (16-frame causal window)",
             "fusion_debouncer": "Weighted Sum + N=6 Frame Debounce",
+            "fault_engine": "Kinematic Right-of-Way & Causal Liability Engine",
             "privacy_redactor": "Automated Face & Plate Gaussian Blur"
         },
         "device": "cpu",
@@ -197,11 +251,11 @@ def api_sample_clips():
         samples.append({
             "id": "real_highway",
             "title": "Real Highway Traffic (1440p 2.5K)",
-            "description": "Multi-lane dusk expressway underpass with dense vehicular flow. Verifies false-alarm immunity and persistent multi-object tracking.",
+            "description": "Multi-lane dusk expressway underpass with dense vehicular flow. Verifies false-alarm immunity, temporal overlapping, and persistent multi-object tracking.",
             "source_type": "sample",
             "filename": "93869-642182008_medium.mp4",
             "resolution": "2560x1440",
-            "duration": "29.5s",
+            "duration": "29.5s (885 frames)",
             "badge": "Real CCTV"
         })
 
@@ -209,7 +263,7 @@ def api_sample_clips():
     samples.append({
         "id": "synthetic_collision",
         "title": "Pedestrian & Motorcycle Collision Simulation",
-        "description": "Controlled trajectory with converging vehicles, sudden deceleration shock, and pedestrian fall posture.",
+        "description": "Controlled trajectory with converging vehicles, sudden deceleration shock, pedestrian fall posture, and fault liability attribution.",
         "source_type": "synthetic",
         "filename": None,
         "resolution": "1280x720",
@@ -264,12 +318,18 @@ def api_upload():
 def api_analyze():
     """
     Run end-to-end accident detection pipeline on the requested video.
-    Returns definitive verdict, severity, telemetry timeline, keyframe snapshots, and annotated video.
+    Returns definitive verdict, fault attribution, severity, telemetry timeline, keyframe snapshots, and annotated web video.
     """
     data = request.get_json(silent=True) or request.form.to_dict()
     source_type = data.get("source_type", "sample")
     filename = data.get("filename")
-    max_frames = int(data.get("max_frames", 120))
+
+    raw_max = data.get("max_frames")
+    if raw_max in (0, "0", "all", "full", None, ""):
+        max_frames = 0  # 0 indicates process full video
+    else:
+        max_frames = int(raw_max)
+
     conf_threshold = float(data.get("conf_threshold", 0.40))
     redact_privacy = str(data.get("redact_privacy", "true")).lower() in ("true", "1", "yes")
     mock_mode = str(data.get("mock_mode", "false")).lower() in ("true", "1", "yes")
@@ -282,17 +342,15 @@ def api_analyze():
 
     # Determine input stream
     if source_type == "synthetic":
-        stream_gen = generate_synthetic_stream(num_frames=max_frames)
+        stream_frames = max_frames if max_frames > 0 else 120
+        stream_gen = generate_synthetic_stream(num_frames=stream_frames)
         fps = 30.0
         input_desc = "Synthetic Crash Simulation"
     else:
-        # Locate video file
         target_path = None
         if filename:
-            # Check uploads first
             if (UPLOAD_DIR / filename).exists():
                 target_path = UPLOAD_DIR / filename
-            # Check recordings
             elif (RECORDINGS_DIR / filename).exists():
                 target_path = RECORDINGS_DIR / filename
 
@@ -307,13 +365,24 @@ def api_analyze():
 
         def video_stream():
             count = 0
+            last_good_frame = None
+            miss_count = 0
             while cap.isOpened():
                 ret, frame = cap.read()
-                if not ret:
-                    break
+                # Frame-drop recovery: if momentary read drop, overlap last valid frame
+                if not ret or frame is None or frame.size == 0:
+                    miss_count += 1
+                    if miss_count <= 3 and last_good_frame is not None:
+                        frame = last_good_frame.copy()
+                    else:
+                        break
+                else:
+                    miss_count = 0
+                    last_good_frame = frame
+
                 yield frame
                 count += 1
-                if max_frames and count >= max_frames:
+                if max_frames and max_frames > 0 and count >= max_frames:
                     break
             cap.release()
 
@@ -348,6 +417,8 @@ def api_analyze():
     near_miss_events: List[Dict[str, Any]] = []
     timeline: List[Dict[str, Any]] = []
     keyframe_snapshots: List[Dict[str, Any]] = []
+    last_fault_report: Optional[FaultAttributionReport] = None
+    last_active_tracks: List[TrackedObject] = []
 
     channel_sums = {"detection_conf": 0.0, "pose_anomaly": 0.0, "kinematic_risk": 0.0, "temporal_anomaly": 0.0}
 
@@ -358,6 +429,10 @@ def api_analyze():
 
             curr_risk = result.fused_risk.fused_score
             driver = result.fused_risk.primary_driver
+            last_active_tracks = result.tracks
+
+            if result.fault_attribution and result.fault_attribution.has_fault_determination:
+                last_fault_report = result.fault_attribution
 
             # Accumulate channel scores
             attr = result.fused_risk.channel_attributions
@@ -388,7 +463,6 @@ def api_analyze():
                 }
                 accident_events.append(ev)
 
-                # Save keyframe snapshot
                 snap_name = f"{analysis_id}_kf_{frame_count}.jpg"
                 cv2.imwrite(str(RESULTS_DIR / snap_name), result.annotated_frame)
                 keyframe_snapshots.append({
@@ -421,11 +495,21 @@ def api_analyze():
                     "status": "ALERT" if result.debounce_output.is_event_fired else ("NEAR_MISS" if result.debounce_output.is_near_miss_fired else "NORMAL")
                 })
 
+            # Save periodic visual review keyframes (every 25 frames up to 8 max)
+            if frame_count % 25 == 0 and len(keyframe_snapshots) < 8 and result.annotated_frame is not None:
+                snap_periodic = f"{analysis_id}_snap_{frame_count}.jpg"
+                cv2.imwrite(str(RESULTS_DIR / snap_periodic), result.annotated_frame)
+                keyframe_snapshots.append({
+                    "frame_idx": frame_count,
+                    "timestamp_sec": round(frame_count / fps, 2),
+                    "label": f"Review Frame {frame_count} ({round(curr_risk, 2)})",
+                    "url": f"/media/results/{snap_periodic}"
+                })
+
             # Video encoding
             if result.annotated_frame is not None:
                 if writer is None:
                     h, w = result.annotated_frame.shape[:2]
-                    # Resize to 1280x720 max for web video streaming performance
                     scale = min(1.0, 1280.0 / max(w, 1))
                     target_w = int(w * scale)
                     target_h = int(h * scale)
@@ -451,6 +535,10 @@ def api_analyze():
     elapsed_time = max(0.01, time.time() - start_time)
     avg_fps = frame_count / elapsed_time
 
+    # Transcode OpenCV MP4 to browser-native H.264 MP4
+    if out_video_path.exists() and out_video_path.stat().st_size > 0:
+        transcode_to_web_h264(out_video_path, out_video_path)
+
     # Save peak keyframe
     if peak_frame_img is not None:
         cv2.imwrite(str(peak_image_path), peak_frame_img)
@@ -459,7 +547,8 @@ def api_analyze():
         cv2.imwrite(str(peak_image_path), dummy)
 
     # Determine grand verdict
-    if len(accident_events) > 0:
+    is_accident_event = len(accident_events) > 0
+    if is_accident_event:
         verdict = "ACCIDENT_DETECTED"
         verdict_label = "Accident Detected"
         severity = accident_events[0]["severity"].upper()
@@ -480,6 +569,23 @@ def api_analyze():
         severity = "NONE"
         verdict_color = "green"
         explanation = "Traffic trajectories, Time-to-Collision (TTC), and poses remained within stable, safe operational bounds."
+
+    # Final Fault & Liability Attribution
+    if is_accident_event and last_fault_report is None:
+        last_fault_report = FaultAttributionEngine.evaluate_fault(
+            involved_tracks=last_active_tracks,
+            trajectory_histories=pipeline.tracker.trajectory_manager.tracks,
+            kinematic_report=None,
+            posture_reports=None,
+            is_accident=True,
+            pixels_per_meter=pipeline.kinematic_engine.pixels_per_meter,
+        )
+    elif not is_accident_event:
+        last_fault_report = FaultAttributionEngine.evaluate_fault(
+            involved_tracks=[],
+            trajectory_histories={},
+            is_accident=False,
+        )
 
     # Compute channel contribution percentages
     total_channel = sum(channel_sums.values()) or 1.0
@@ -519,7 +625,8 @@ def api_analyze():
         "timeline": timeline,
         "keyframe_url": f"/media/results/{peak_image_name}",
         "video_url": f"/media/results/{out_video_name}",
-        "keyframe_snapshots": keyframe_snapshots
+        "keyframe_snapshots": keyframe_snapshots,
+        "fault_attribution": last_fault_report.to_dict() if last_fault_report else None,
     }
 
     return jsonify(response_payload)
@@ -527,16 +634,23 @@ def api_analyze():
 
 @app.route("/media/<category>/<path:filename>", methods=["GET"])
 def serve_media(category: str, filename: str):
-    """Serve media files from uploads, results, or recordings clips."""
+    """Serve media files from uploads, results, or recordings clips with proper content type."""
     safe_name = secure_filename(filename)
+    target_dir = None
     if category == "uploads":
-        return send_from_directory(UPLOAD_DIR, safe_name)
+        target_dir = UPLOAD_DIR
     elif category == "results":
-        return send_from_directory(RESULTS_DIR, safe_name)
+        target_dir = RESULTS_DIR
     elif category == "recordings":
-        return send_from_directory(RECORDINGS_DIR, safe_name)
-    return jsonify({"error": "Unknown media category"}), 404
+        target_dir = RECORDINGS_DIR
+
+    if target_dir and (target_dir / safe_name).exists():
+        return send_from_directory(target_dir, safe_name)
+    return jsonify({"error": "Media file not found or pending transcode", "filename": safe_name}), 404
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    print(f"Starting RADS Web Server on {host}:{port}...")
+    app.run(host=host, port=port, debug=False)

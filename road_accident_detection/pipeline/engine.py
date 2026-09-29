@@ -26,6 +26,7 @@ from ..fusion.multi_channel_fusion import ChannelScores, FusedRiskResult, MultiC
 from ..fusion.debouncer import TemporalDebouncer, DebounceOutput, DebounceStatus
 from ..fusion.calibrator import ConfidenceCalibrator
 from ..fusion.severity_classifier import SeverityClassifier, IncidentSeverity, SeverityAssessment
+from ..fusion.fault_attribution import FaultAttributionEngine, FaultAttributionReport
 from ..privacy.face_plate_redaction import PrivacyRedactor
 from ..logging.clip_recorder import CircularClipRecorder, RecordingTrigger
 from ..logging.explainability import ExplainabilityReporter, ExplainabilityReport
@@ -43,6 +44,7 @@ class PipelineFrameResult:
     kinematic_report: KinematicRiskReport
     posture_reports: List[PostureAnomalyReport]
     event_record: Optional[AccidentEventRecord] = None
+    fault_attribution: Optional[FaultAttributionReport] = None
     annotated_frame: Optional[np.ndarray] = None
 
 
@@ -243,6 +245,7 @@ class AccidentDetectionPipeline:
 
         # Stage 9: Incident Event Handling
         event_record: Optional[AccidentEventRecord] = None
+        fault_attribution: Optional[FaultAttributionReport] = None
         if debounce_out.is_event_fired or debounce_out.is_near_miss_fired:
             is_near_miss = debounce_out.is_near_miss_fired
             # Kinematic states of involved tracks
@@ -266,6 +269,16 @@ class AccidentDetectionPipeline:
                 kinematic_report=kin_report,
                 posture_reports=posture_reports,
                 debounce_frames=self.debouncer.consecutive_frames_required,
+            )
+
+            # Fault & Liability Attribution Engine
+            fault_attribution = FaultAttributionEngine.evaluate_fault(
+                involved_tracks=tracks,
+                trajectory_histories=self.tracker.trajectory_manager.tracks,
+                kinematic_report=kin_report,
+                posture_reports=posture_reports,
+                is_accident=debounce_out.is_event_fired,
+                pixels_per_meter=self.kinematic_engine.pixels_per_meter,
             )
 
             # Trigger video recording
@@ -304,6 +317,7 @@ class AccidentDetectionPipeline:
                     kin_report=kin_report,
                     fusion_result=fusion_result,
                     debounce_out=debounce_out,
+                    fault_attribution=fault_attribution,
                 )
 
         self.profiler.end_frame()
@@ -317,6 +331,7 @@ class AccidentDetectionPipeline:
             kinematic_report=kin_report,
             posture_reports=posture_reports,
             event_record=event_record,
+            fault_attribution=fault_attribution,
             annotated_frame=annotated,
         )
 
@@ -328,6 +343,7 @@ class AccidentDetectionPipeline:
         kin_report: KinematicRiskReport,
         fusion_result: FusedRiskResult,
         debounce_out: DebounceOutput,
+        fault_attribution: Optional[FaultAttributionReport] = None,
     ) -> np.ndarray:
         """Render informative real-time heads-up display overlay."""
         h, w = frame.shape[:2]
@@ -335,11 +351,16 @@ class AccidentDetectionPipeline:
         # Draw tracked objects
         for t in tracks:
             x1, y1, x2, y2 = [int(v) for v in t.bbox]
-            color = (0, 255, 0)
-            if t.track_id in kin_report.hard_braking_tracks:
+            if getattr(t, "is_overlapped", False):
+                color = (0, 220, 220)  # Cyan for temporal overlapping / coasting
+                label = f"ID:{t.track_id} {t.class_name.value} [OVERLAP]"
+            elif t.track_id in kin_report.hard_braking_tracks:
                 color = (0, 0, 255)  # Red for braking
+                label = f"ID:{t.track_id} {t.class_name.value} [BRAKE]"
+            else:
+                color = (0, 255, 0)
+                label = f"ID:{t.track_id} {t.class_name.value} {t.confidence:.2f}"
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            label = f"ID:{t.track_id} {t.class_name.value} {t.confidence:.2f}"
             cv2.putText(frame, label, (x1, max(15, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
         # Draw critical TTC vector lines between colliding pairs
@@ -394,24 +415,39 @@ class AccidentDetectionPipeline:
 
         # If Event Triggered, flash red alert banner across top
         if debounce_out.is_event_fired:
-            cv2.rectangle(frame, (w // 4, 20), (3 * w // 4, 80), (0, 0, 220), -1)
+            cv2.rectangle(frame, (w // 4, 15), (3 * w // 4, 65), (0, 0, 220), -1)
             cv2.putText(
                 frame,
                 "*** ACCIDENT DETECTED - DISPATCH ALERT ***",
-                (w // 4 + 20, 60),
+                (w // 4 + 20, 48),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.75,
+                0.70,
                 (255, 255, 255),
                 2,
             )
+            # Render Fault Attribution banner below alert
+            if fault_attribution and fault_attribution.has_fault_determination and fault_attribution.primary_at_fault_id:
+                prim_cls = fault_attribution.primary_at_fault_class.value.upper() if fault_attribution.primary_at_fault_class else "VEHICLE"
+                fault_banner = f"FAULT: ID #{fault_attribution.primary_at_fault_id} ({prim_cls}) | {fault_attribution.primary_liability_percentage:.0f}% LIABILITY"
+                cv2.rectangle(frame, (w // 4, 70), (3 * w // 4, 105), (10, 10, 80), -1)
+                cv2.rectangle(frame, (w // 4, 70), (3 * w // 4, 105), (0, 220, 255), 1)
+                cv2.putText(
+                    frame,
+                    fault_banner,
+                    (w // 4 + 15, 95),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.58,
+                    (0, 240, 255),
+                    2,
+                )
         elif debounce_out.is_near_miss_fired:
-            cv2.rectangle(frame, (w // 4, 20), (3 * w // 4, 80), (0, 165, 255), -1)
+            cv2.rectangle(frame, (w // 4, 20), (3 * w // 4, 75), (0, 165, 255), -1)
             cv2.putText(
                 frame,
                 "*** NEAR-MISS EVENT LOGGED ***",
-                (w // 4 + 40, 60),
+                (w // 4 + 40, 56),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.75,
+                0.70,
                 (0, 0, 0),
                 2,
             )
