@@ -1,0 +1,9 @@
+# Cloudflare Pages Redirects & Reverse Proxy
+# For instructions on linking your backend URL, see README.md
+
+# Proxy API calls to backend (replace with your actual Render / Cloud Run / Railway URL if deploying backend separately)
+# /api/* https://your-backend.onrender.com/api/:splat 200
+# /media/* https://your-backend.onrender.com/media/:splat 200
+
+# Single Page Application (SPA) routing fallback
+/* /index.html 200

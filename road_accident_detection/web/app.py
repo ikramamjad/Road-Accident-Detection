@@ -229,6 +229,25 @@ class SyntheticPoseAdapter:
         return [PersonPose(keypoints=kps, bbox=bbox, confidence=0.88)]
 
 
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        res = app.make_default_options_response()
+        res.headers["Access-Control-Allow-Origin"] = "*"
+        res.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+        res.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+        return res
+
+
+@app.after_request
+def add_cors_headers(response):
+    """Enable CORS so frontend can be deployed separately on Vercel/Netlify while backend runs on Render/Cloud Run."""
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    return response
+
+
 @app.route("/")
 def index():
     """Render the primary Landing Page."""
