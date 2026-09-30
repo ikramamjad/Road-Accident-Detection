@@ -3,10 +3,41 @@ Strictly Causal Gated Recurrent Unit (Causal GRU) for Accident Anomaly Detection
 Processes temporal sliding windows without future-frame leakage.
 """
 
-from typing import Optional, Tuple
-import torch
-import torch.nn as nn
+from __future__ import annotations
+from typing import Any, Optional, Tuple
 import numpy as np
+
+try:
+    import torch
+    import torch.nn as nn
+    if torch is None:
+        raise ImportError("torch is None")
+    TORCH_AVAILABLE = True
+except (ImportError, AttributeError):
+    TORCH_AVAILABLE = False
+    torch = type("torch", (), {"Tensor": Any, "device": Any})()
+
+    class _DummyModule:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __call__(self, *args, **kwargs):
+            return self
+        def eval(self):
+            return self
+        def to(self, *args, **kwargs):
+            return self
+
+    class _DummyNN:
+        Module = _DummyModule
+        def Sequential(self, *args, **kwargs): return _DummyModule()
+        def Linear(self, *args, **kwargs): return _DummyModule()
+        def LayerNorm(self, *args, **kwargs): return _DummyModule()
+        def ReLU(self, *args, **kwargs): return _DummyModule()
+        def GRU(self, *args, **kwargs): return _DummyModule()
+        def Dropout(self, *args, **kwargs): return _DummyModule()
+        def Sigmoid(self, *args, **kwargs): return _DummyModule()
+
+    nn = _DummyNN()
 
 
 class CausalGRUModel(nn.Module):
@@ -89,25 +120,28 @@ class TemporalInferenceEngine:
         num_layers: int = 2,
         device: str = "cpu",
     ):
-        self.device = torch.device(device)
-        self.model = CausalGRUModel(
-            input_dim=input_dim,
-            hidden_dim=hidden_dim,
-            num_layers=num_layers,
-        ).to(self.device)
+        self.device = torch.device(device) if TORCH_AVAILABLE else "cpu"
+        self.model = None
+        if TORCH_AVAILABLE:
+            self.model = CausalGRUModel(
+                input_dim=input_dim,
+                hidden_dim=hidden_dim,
+                num_layers=num_layers,
+            ).to(self.device)
 
-        if model_path:
-            self.load_weights(model_path)
+            if model_path:
+                self.load_weights(model_path)
 
-        self.model.eval()
+            self.model.eval()
 
     def load_weights(self, path: str) -> None:
         """Load trained PyTorch state dict."""
+        if not TORCH_AVAILABLE or self.model is None:
+            return
         try:
             state = torch.load(path, map_location=self.device)
             self.model.load_state_dict(state)
-        except Exception as e:
-            # Keep initialized weights if checkpoint not found
+        except Exception:
             pass
 
     def evaluate_sequence(self, feature_matrix: np.ndarray) -> float:
@@ -119,6 +153,13 @@ class TemporalInferenceEngine:
             anomaly_score: float in range [0.0, 1.0]
         """
         if feature_matrix is None or feature_matrix.shape[0] == 0:
+            return 0.0
+
+        if not TORCH_AVAILABLE or self.model is None:
+            # Deterministic heuristic fallback when PyTorch is not available
+            if feature_matrix.shape[1] > 2:
+                recent_risk = float(np.mean(np.abs(feature_matrix[-3:, 2])))
+                return float(np.clip(recent_risk / 10.0, 0.0, 1.0))
             return 0.0
 
         with torch.no_grad():

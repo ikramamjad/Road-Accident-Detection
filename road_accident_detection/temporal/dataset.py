@@ -4,10 +4,20 @@ Provides training and evaluation sequences for Causal GRU and Fusion layers,
 compatible with Car Crash Dataset (CCD) format and synthetic benchmarks.
 """
 
-from typing import List, Tuple
+from __future__ import annotations
+from typing import Any, List, Tuple
 import numpy as np
-import torch
-from torch.utils.data import Dataset
+
+try:
+    import torch
+    from torch.utils.data import Dataset
+    if torch is None:
+        raise ImportError("torch is None")
+    TORCH_AVAILABLE = True
+except (ImportError, AttributeError):
+    TORCH_AVAILABLE = False
+    torch = type("torch", (), {"Tensor": Any})()
+    Dataset = object
 
 
 class SequenceDataset(Dataset):

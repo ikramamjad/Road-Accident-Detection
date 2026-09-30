@@ -1,0 +1,27 @@
+# Docker build ignore configuration
+lib/
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.whl
+
+data/web_uploads/*
+data/web_results/*
+data/recordings/clips/*
+data/recordings/events/*
+!data/web_uploads/.gitkeep
+!data/web_results/.gitkeep
+!data/recordings/clips/.gitkeep
+!data/recordings/events/.gitkeep
+
+scratch/
+tests/
+.git/
+.github/
+.vscode/
+.idea/
+.DS_Store
+*.log

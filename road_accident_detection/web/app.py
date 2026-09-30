@@ -38,12 +38,33 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config["SECRET_KEY"] = "rads-secret-key-2026"
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB max upload
 
-UPLOAD_DIR = _ROOT / "data" / "web_uploads"
-RESULTS_DIR = _ROOT / "data" / "web_results"
-RECORDINGS_DIR = _ROOT / "data" / "recordings" / "clips"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
+def _get_writable_dir(subpath: str) -> Path:
+    """Return a writable directory path, falling back to /tmp if root is read-only or serverless."""
+    custom_base = os.environ.get("RADS_DATA_DIR")
+    if custom_base:
+        p = Path(custom_base) / subpath
+        try:
+            p.mkdir(parents=True, exist_ok=True)
+            return p
+        except (OSError, PermissionError):
+            pass
+
+    target = _ROOT / "data" / subpath
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        probe = target / f".probe_{uuid.uuid4().hex[:6]}"
+        probe.touch()
+        probe.unlink()
+        return target
+    except (OSError, PermissionError):
+        fallback = Path("/tmp") / "rads_data" / subpath
+        fallback.mkdir(parents=True, exist_ok=True)
+        return fallback
+
+
+UPLOAD_DIR = _get_writable_dir("web_uploads")
+RESULTS_DIR = _get_writable_dir("web_results")
+RECORDINGS_DIR = _get_writable_dir("recordings/clips")
 
 ALLOWED_EXTENSIONS = {"mp4", "avi", "mov", "mkv", "webm", "m4v"}
 
@@ -52,16 +73,30 @@ _CACHED_PIPELINE: Optional[AccidentDetectionPipeline] = None
 
 
 def get_pipeline(mock_mode: bool = False) -> AccidentDetectionPipeline:
-    """Return singleton pipeline instance, initialized on first use."""
+    """Return singleton pipeline instance, initialized on first use with serverless fallback."""
     global _CACHED_PIPELINE
     if _CACHED_PIPELINE is None:
         cfg_path = str(_ROOT / "configs" / "pipeline_config.yaml")
         cam_path = str(_ROOT / "configs" / "camera_config.json")
-        _CACHED_PIPELINE = AccidentDetectionPipeline(
-            config_path=cfg_path,
-            camera_config_path=cam_path,
-            mock_mode=mock_mode,
+        is_serverless = bool(
+            os.environ.get("VERCEL")
+            or os.environ.get("RADS_SERVERLESS")
+            or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
         )
+        effective_mock = mock_mode or is_serverless
+        try:
+            _CACHED_PIPELINE = AccidentDetectionPipeline(
+                config_path=cfg_path,
+                camera_config_path=cam_path,
+                mock_mode=effective_mock,
+            )
+        except Exception as e:
+            print(f"[RADS] Pipeline init fallback to mock mode due to: {e}")
+            _CACHED_PIPELINE = AccidentDetectionPipeline(
+                config_path=cfg_path,
+                camera_config_path=cam_path,
+                mock_mode=True,
+            )
     return _CACHED_PIPELINE
 
 

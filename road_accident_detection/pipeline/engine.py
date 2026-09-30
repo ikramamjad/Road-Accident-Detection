@@ -53,10 +53,16 @@ class AccidentDetectionPipeline:
 
     def __init__(
         self,
-        config_path: str = "d:/Road Accident Detection/configs/pipeline_config.yaml",
-        camera_config_path: str = "d:/Road Accident Detection/configs/camera_config.json",
+        config_path: Optional[str] = None,
+        camera_config_path: Optional[str] = None,
         mock_mode: bool = False,
     ):
+        root_dir = Path(__file__).resolve().parent.parent.parent
+        if config_path is None or "d:/" in str(config_path).lower() or "d:\\" in str(config_path).lower():
+            config_path = str(root_dir / "configs" / "pipeline_config.yaml")
+        if camera_config_path is None or "d:/" in str(camera_config_path).lower() or "d:\\" in str(camera_config_path).lower():
+            camera_config_path = str(root_dir / "configs" / "camera_config.json")
+
         self.config_path = config_path
         self.camera_config_path = camera_config_path
         self.mock_mode = mock_mode
@@ -144,14 +150,28 @@ class AccidentDetectionPipeline:
 
         # 8. Evidence Clip Recorder & Event Logger
         log_cfg = self.config.get("logging", {})
+        default_clips = str(root_dir / "data" / "recordings" / "clips")
+        default_events = str(root_dir / "data" / "recordings" / "events")
+        clips_dir = log_cfg.get("clips_dir")
+        if not clips_dir or "d:/" in str(clips_dir).lower() or "d:\\" in str(clips_dir).lower():
+            clips_dir = default_clips
+        elif not Path(clips_dir).is_absolute():
+            clips_dir = str(root_dir / clips_dir)
+
+        events_dir = log_cfg.get("events_dir")
+        if not events_dir or "d:/" in str(events_dir).lower() or "d:\\" in str(events_dir).lower():
+            events_dir = default_events
+        elif not Path(events_dir).is_absolute():
+            events_dir = str(root_dir / events_dir)
+
         self.clip_recorder = CircularClipRecorder(
-            output_dir=log_cfg.get("clips_dir", "d:/Road Accident Detection/data/recordings/clips"),
+            output_dir=clips_dir,
             pre_buffer_seconds=log_cfg.get("pre_buffer_seconds", 10),
             post_buffer_seconds=log_cfg.get("post_buffer_seconds", 10),
             fps=fps,
         )
         self.event_logger = EventLogger(
-            output_dir=log_cfg.get("events_dir", "d:/Road Accident Detection/data/recordings/events"),
+            output_dir=events_dir,
             camera_metadata=self.camera_meta,
         )
 

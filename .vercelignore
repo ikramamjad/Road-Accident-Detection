@@ -1,0 +1,49 @@
+# Vercel Deployment Ignore Configuration
+# Excludes heavy local environments, datasets, binaries, and test artifacts
+# to guarantee function bundle stays strictly under the 500 MB limit.
+
+# Local Python Environments and Wheels
+lib/
+venv/
+.venv/
+env/
+*.whl
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large Datasets, Uploads, Results, and Video Recordings
+data/
+data/web_uploads/*
+data/web_results/*
+data/recordings/*
+data/exported_models/*
+scratch/
+
+# Model Weights and Large Binaries
+*.pt
+*.bin
+*.onnx
+yolo11*.pt
+
+# Development, Testing, and Scripts
+tests/
+scripts/
+configs/weights/
+
+# Git and Container Metadata
+.git/
+.github/
+Dockerfile
+docker-compose.yml
+.dockerignore
+Procfile
+render.yaml
+railway.json
+
+# Logs and IDE configs
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

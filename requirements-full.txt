@@ -1,0 +1,10 @@
+# Full deep learning pipeline requirements for Docker, Render, Railway, Cloud Run, AWS (CPU)
+# Using PyTorch CPU wheels avoids bloating the container with 4.5 GB of unused CUDA packages
+-r requirements.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.3.0
+onnx>=1.14.0
+onnxruntime>=1.15.0
+matplotlib>=3.7.0

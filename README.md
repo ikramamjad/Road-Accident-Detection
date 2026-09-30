@@ -216,3 +216,36 @@ python scripts/train_temporal_gru.py --epochs 15
 ```bash
 python scripts/evaluate_ccd.py --stratified
 ```
+
+---
+
+## 6. Cloud & Production Deployment Guide
+
+RADS provides multi-tier deployment profiles tailored for serverless functions, cloud containers, and dedicated GPU instances.
+
+### 6.1 Serverless Deployment (Vercel / AWS Lambda)
+- **Bundle Limit**: Serverless functions enforce a strict **500 MB** uncompressed bundle limit.
+- **Entrypoint**: Configured via `vercel.json` and [`api/index.py`](file:///d:/Road%20Accident%20Detection/api/index.py).
+- **Dependencies**: Root [`requirements.txt`](file:///d:/Road%20Accident%20Detection/requirements.txt) installs lightweight web dependencies (~250 MB) without bulky CUDA libraries.
+- **Ignore Rules**: [`.vercelignore`](file:///d:/Road%20Accident%20Detection/.vercelignore) excludes local `lib/`, `data/`, model weights, and test artifacts.
+- **Runtime Mode**: Runs interactive simulation, fault attribution forensic dashboard, and synthetic video verification safely within serverless limits.
+
+### 6.2 Cloud Container & PaaS Deployment (Render / Railway / Cloud Run / Koyeb)
+For full deep learning video inference with YOLO11, YOLO11-Pose, and Causal GRU:
+- **Render**: One-click deployment via [`render.yaml`](file:///d:/Road%20Accident%20Detection/render.yaml) using Docker.
+- **Railway**: Configured via [`railway.json`](file:///d:/Road%20Accident%20Detection/railway.json).
+- **Procfile**: Production Gunicorn command:
+  ```bash
+  web: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 wsgi:application
+  ```
+- **Docker**:
+  ```bash
+  docker build -t rads:latest .
+  docker run -p 5000:5000 -e PORT=5000 rads:latest
+  ```
+
+### 6.3 Dependency Profiles
+- **`requirements.txt`**: Lightweight web profile (< 250 MB) for Vercel, AWS Lambda, and web interfaces.
+- **`requirements-full.txt`**: CPU-optimized PyTorch and deep learning models for standard cloud containers (Render, Railway, Cloud Run).
+- **`requirements-gpu.txt`**: Full CUDA 12 PyTorch and TensorRT/ONNX Runtime for GPU instances (AWS G4/G5, RunPod, GCP).
+

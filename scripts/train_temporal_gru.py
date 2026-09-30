@@ -21,13 +21,18 @@ from road_accident_detection.temporal.dataset import SequenceDataset, SyntheticS
 from road_accident_detection.fusion.multi_channel_fusion import LearnedFusionMLP
 
 
+_ROOT = Path(__file__).resolve().parent.parent
+
+
 def train_causal_gru(
-    output_dir: str = "d:/Road Accident Detection/data/weights",
+    output_dir: Optional[str] = None,
     epochs: int = 15,
     batch_size: int = 32,
     lr: float = 1e-3,
     seq_len: int = 16,
 ):
+    if output_dir is None or "d:/" in str(output_dir).lower() or "d:\\" in str(output_dir).lower():
+        output_dir = str(_ROOT / "data" / "weights")
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[Training] Using device: {device}")
@@ -102,11 +107,13 @@ def train_causal_gru(
 
 
 def train_fusion_mlp(
-    output_dir: str = "d:/Road Accident Detection/data/weights",
+    output_dir: Optional[str] = None,
     epochs: int = 20,
     batch_size: int = 32,
     lr: float = 1e-3,
 ):
+    if output_dir is None or "d:/" in str(output_dir).lower() or "d:\\" in str(output_dir).lower():
+        output_dir = str(_ROOT / "data" / "weights")
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\n[Fusion MLP] Training Learned Cross-Channel Fusion MLP...")
@@ -163,7 +170,7 @@ def train_fusion_mlp(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train Causal GRU and Fusion Network")
     parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--output_dir", type=str, default="d:/Road Accident Detection/data/weights")
+    parser.add_argument("--output_dir", type=str, default=str(_ROOT / "data" / "weights"))
     args = parser.parse_args()
 
     train_causal_gru(output_dir=args.output_dir, epochs=args.epochs)

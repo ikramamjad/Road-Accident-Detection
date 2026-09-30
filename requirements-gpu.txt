@@ -1,0 +1,9 @@
+# Full deep learning pipeline requirements for GPU-enabled deployment (CUDA 12)
+# Use for AWS EC2 (G4/G5), Google Cloud Compute Engine (T4/L4/A100), RunPod, Lambda Labs
+-r requirements.txt
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.3.0
+onnx>=1.14.0
+onnxruntime-gpu>=1.15.0
+matplotlib>=3.7.0

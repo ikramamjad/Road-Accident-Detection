@@ -29,9 +29,15 @@ class ExportResult:
 class ONNXExporter:
     """Handles PyTorch to ONNX graph serialization and numeric verification."""
 
-    def __init__(self, output_dir: str = "d:/Road Accident Detection/data/exported_models"):
+    def __init__(self, output_dir: Optional[str] = None):
+        if output_dir is None or "d:/" in str(output_dir).lower() or "d:\\" in str(output_dir).lower():
+            output_dir = str(Path(__file__).resolve().parent.parent.parent / "data" / "exported_models")
         self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+        except (OSError, PermissionError):
+            self.output_dir = Path("/tmp") / "rads_data" / "exported_models"
+            self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def export_causal_gru(
         self,

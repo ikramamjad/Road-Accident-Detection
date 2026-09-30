@@ -75,6 +75,6 @@ privacy:
 logging:
   pre_buffer_seconds: 10
   post_buffer_seconds: 10
-  clips_dir: "d:/Road Accident Detection/data/recordings/clips"
-  events_dir: "d:/Road Accident Detection/data/recordings/events"
+  clips_dir: "data/recordings/clips"
+  events_dir: "data/recordings/events"
   log_level: "INFO"

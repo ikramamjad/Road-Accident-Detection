@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: road-accident-detection-system
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: FLASK_DEBUG
+        value: 0

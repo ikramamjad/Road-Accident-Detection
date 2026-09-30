@@ -82,8 +82,20 @@ class YOLO11Detector:
     def _load_model(self) -> None:
         """Attempt to load Ultralytics YOLO model or set mock mode if unavailable."""
         try:
+            from pathlib import Path
             from ultralytics import YOLO  # type: ignore
-            self._model = YOLO(self.model_name)
+
+            model_path = self.model_name
+            root_dir = Path(__file__).resolve().parent.parent.parent
+            root_candidate = root_dir / self.model_name
+            weights_candidate = root_dir / "data" / "weights" / self.model_name
+
+            if root_candidate.exists():
+                model_path = str(root_candidate)
+            elif weights_candidate.exists():
+                model_path = str(weights_candidate)
+
+            self._model = YOLO(model_path)
             self._is_loaded = True
         except Exception as e:
             # If weights download fails or ultralytics is loading, fall back gracefully

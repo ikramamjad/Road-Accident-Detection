@@ -4,11 +4,34 @@ Combines Detection Confidence, Pose Anomaly, Kinematic Risk, and Temporal Anomal
 into an explainable, calibrated risk score.
 """
 
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import numpy as np
-import torch
-import torch.nn as nn
+
+try:
+    import torch
+    import torch.nn as nn
+    if torch is None:
+        raise ImportError("torch is None")
+    TORCH_AVAILABLE = True
+except (ImportError, AttributeError):
+    TORCH_AVAILABLE = False
+    torch = type("torch", (), {"Tensor": Any, "device": Any})()
+
+    class _DummyModule:
+        def __init__(self, *args, **kwargs): pass
+        def __call__(self, *args, **kwargs): return self
+        def eval(self): return self
+
+    class _DummyNN:
+        Module = _DummyModule
+        def Sequential(self, *args, **kwargs): return _DummyModule()
+        def Linear(self, *args, **kwargs): return _DummyModule()
+        def ReLU(self, *args, **kwargs): return _DummyModule()
+        def Sigmoid(self, *args, **kwargs): return _DummyModule()
+
+    nn = _DummyNN()
 
 
 @dataclass
@@ -148,6 +171,8 @@ class MultiChannelFusionEngine:
         )
 
     def _fuse_mlp(self, s: ChannelScores) -> float:
+        if not TORCH_AVAILABLE:
+            return self._fuse_weighted_sum(s)
         with torch.no_grad():
             inp = torch.tensor(s.to_array()).unsqueeze(0)
             out = self.mlp_model(inp)

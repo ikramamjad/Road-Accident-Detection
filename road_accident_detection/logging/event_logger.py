@@ -39,11 +39,17 @@ class EventLogger:
 
     def __init__(
         self,
-        output_dir: str = "d:/Road Accident Detection/data/recordings/events",
+        output_dir: Optional[str] = None,
         camera_metadata: Optional[Dict[str, Any]] = None,
     ):
+        if output_dir is None or "d:/" in str(output_dir).lower() or "d:\\" in str(output_dir).lower():
+            output_dir = str(Path(__file__).resolve().parent.parent.parent / "data" / "recordings" / "events")
         self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+        except (OSError, PermissionError):
+            self.output_dir = Path("/tmp") / "rads_data" / "recordings" / "events"
+            self.output_dir.mkdir(parents=True, exist_ok=True)
         self.camera_meta = camera_metadata or {
             "camera_id": "DEFAULT_CAM_01",
             "latitude": 0.0,

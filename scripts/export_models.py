@@ -15,10 +15,11 @@ from road_accident_detection.export.onnx_exporter import ONNXExporter
 
 def main():
     parser = argparse.ArgumentParser(description="Export neural network models to ONNX")
+    _ROOT = Path(__file__).resolve().parent.parent
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="d:/Road Accident Detection/data/exported_models",
+        default=str(_ROOT / "data" / "exported_models"),
         help="Directory to save exported ONNX models",
     )
     args = parser.parse_args()

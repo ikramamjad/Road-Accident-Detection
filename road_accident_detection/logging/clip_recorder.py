@@ -28,13 +28,19 @@ class CircularClipRecorder:
 
     def __init__(
         self,
-        output_dir: str = "d:/Road Accident Detection/data/recordings/clips",
+        output_dir: Optional[str] = None,
         pre_buffer_seconds: int = 10,
         post_buffer_seconds: int = 10,
         fps: float = 30.0,
     ):
+        if output_dir is None or "d:/" in str(output_dir).lower() or "d:\\" in str(output_dir).lower():
+            output_dir = str(Path(__file__).resolve().parent.parent.parent / "data" / "recordings" / "clips")
         self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+        except (OSError, PermissionError):
+            self.output_dir = Path("/tmp") / "rads_data" / "recordings" / "clips"
+            self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.fps = max(fps, 1.0)
         self.pre_buffer_frames = int(pre_buffer_seconds * self.fps)

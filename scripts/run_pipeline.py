@@ -66,16 +66,17 @@ def main():
         default="synthetic",
         help="Input source: video file path, webcam device index (e.g. '0'), or 'synthetic'",
     )
+    _ROOT = Path(__file__).resolve().parent.parent
     parser.add_argument(
         "--config",
         type=str,
-        default="d:/Road Accident Detection/configs/pipeline_config.yaml",
+        default=str(_ROOT / "configs" / "pipeline_config.yaml"),
         help="Pipeline configuration YAML path",
     )
     parser.add_argument(
         "--camera_config",
         type=str,
-        default="d:/Road Accident Detection/configs/camera_config.json",
+        default=str(_ROOT / "configs" / "camera_config.json"),
         help="Camera metadata JSON path",
     )
     parser.add_argument(
